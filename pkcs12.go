@@ -658,26 +658,27 @@ func (enc *Encoder) Encode(privateKey interface{}, certificate *x509.Certificate
 			certBags = append(certBags, *certBag)
 		}
 	}
-
 	var keyBag safeBag
-	if enc.keyAlgorithm == nil {
-		keyBag.Id = oidKeyBag
-		keyBag.Value.Class = 2
-		keyBag.Value.Tag = 0
-		keyBag.Value.IsCompound = true
-		if keyBag.Value.Bytes, err = x509.MarshalPKCS8PrivateKey(privateKey); err != nil {
-			return nil, err
+	if nil != privateKey {
+		if enc.keyAlgorithm == nil {
+			keyBag.Id = oidKeyBag
+			keyBag.Value.Class = 2
+			keyBag.Value.Tag = 0
+			keyBag.Value.IsCompound = true
+			if keyBag.Value.Bytes, err = x509.MarshalPKCS8PrivateKey(privateKey); err != nil {
+				return nil, err
+			}
+		} else {
+			keyBag.Id = oidPKCS8ShroundedKeyBag
+			keyBag.Value.Class = 2
+			keyBag.Value.Tag = 0
+			keyBag.Value.IsCompound = true
+			if keyBag.Value.Bytes, err = encodePkcs8ShroudedKeyBag(enc.rand, privateKey, enc.keyAlgorithm, encodedPassword, enc.encryptionIterations, enc.saltLen); err != nil {
+				return nil, err
+			}
 		}
-	} else {
-		keyBag.Id = oidPKCS8ShroundedKeyBag
-		keyBag.Value.Class = 2
-		keyBag.Value.Tag = 0
-		keyBag.Value.IsCompound = true
-		if keyBag.Value.Bytes, err = encodePkcs8ShroudedKeyBag(enc.rand, privateKey, enc.keyAlgorithm, encodedPassword, enc.encryptionIterations, enc.saltLen); err != nil {
-			return nil, err
-		}
+		keyBag.Attributes = append(keyBag.Attributes, localKeyIdAttr)
 	}
-	keyBag.Attributes = append(keyBag.Attributes, localKeyIdAttr)
 
 	// Construct an authenticated safe with two SafeContents.
 	// The first SafeContents is encrypted and contains the cert bags.
@@ -686,8 +687,10 @@ func (enc *Encoder) Encode(privateKey interface{}, certificate *x509.Certificate
 	if authenticatedSafe[0], err = makeSafeContents(enc.rand, certBags, enc.certAlgorithm, encodedPassword, enc.encryptionIterations, enc.saltLen); err != nil {
 		return nil, err
 	}
-	if authenticatedSafe[1], err = makeSafeContents(enc.rand, []safeBag{keyBag}, nil, nil, 0, 0); err != nil {
-		return nil, err
+	if nil != privateKey {
+		if authenticatedSafe[1], err = makeSafeContents(enc.rand, []safeBag{keyBag}, nil, nil, 0, 0); err != nil {
+			return nil, err
+		}
 	}
 
 	var authenticatedSafeBytes []byte
