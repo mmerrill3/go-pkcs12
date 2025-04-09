@@ -683,20 +683,25 @@ func (enc *Encoder) Encode(privateKey interface{}, certificate *x509.Certificate
 	// Construct an authenticated safe with two SafeContents.
 	// The first SafeContents is encrypted and contains the cert bags.
 	// The second SafeContents is unencrypted and contains the shrouded key bag.
-	var authenticatedSafe [2]contentInfo
-	if authenticatedSafe[0], err = makeSafeContents(enc.rand, certBags, enc.certAlgorithm, encodedPassword, enc.encryptionIterations, enc.saltLen); err != nil {
+	var authenticatedSafe []contentInfo
+	authenticatedSafeBag, err := makeSafeContents(enc.rand, certBags, enc.certAlgorithm, encodedPassword, enc.encryptionIterations, enc.saltLen)
+	if err != nil {
 		return nil, err
 	}
+	authenticatedSafe = append(authenticatedSafe, authenticatedSafeBag)
 	if nil != privateKey {
-		if authenticatedSafe[1], err = makeSafeContents(enc.rand, []safeBag{keyBag}, nil, nil, 0, 0); err != nil {
+		authenticatedSafeBag, err := makeSafeContents(enc.rand, []safeBag{keyBag}, nil, nil, 0, 0)
+		if err != nil {
 			return nil, err
 		}
+		authenticatedSafe = append(authenticatedSafe, authenticatedSafeBag)
 	}
 	fmt.Println("at the zoo")
 	var authenticatedSafeBytes []byte
 	if authenticatedSafeBytes, err = asn1.Marshal(authenticatedSafe[:]); err != nil {
 		return nil, err
 	}
+	fmt.Println("returned from the zoo")
 
 	if enc.macAlgorithm != nil {
 		// compute the MAC
