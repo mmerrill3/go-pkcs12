@@ -692,7 +692,7 @@ func (enc *Encoder) Encode(privateKey interface{}, certificate *x509.Certificate
 			return nil, err
 		}
 	}
-
+	fmt.Println("at the zoo")
 	var authenticatedSafeBytes []byte
 	if authenticatedSafeBytes, err = asn1.Marshal(authenticatedSafe[:]); err != nil {
 		return nil, err
