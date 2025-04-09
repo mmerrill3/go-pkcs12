@@ -696,12 +696,11 @@ func (enc *Encoder) Encode(privateKey interface{}, certificate *x509.Certificate
 		}
 		authenticatedSafe = append(authenticatedSafe, authenticatedSafeBag)
 	}
-	fmt.Println("at the zoo")
+
 	var authenticatedSafeBytes []byte
 	if authenticatedSafeBytes, err = asn1.Marshal(authenticatedSafe[:]); err != nil {
 		return nil, err
 	}
-	fmt.Println("returned from the zoo")
 
 	if enc.macAlgorithm != nil {
 		// compute the MAC
